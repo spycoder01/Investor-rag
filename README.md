@@ -1,107 +1,78 @@
-Investor Intelligence RAG
+# Investor Intelligence RAG
 
-A Streamlit-based PDF Question Answering system for analyzing financial
-and annual reports using Retrieval-Augmented Generation (RAG).
+A document-based Retrieval-Augmented Generation (RAG) application for querying financial and annual reports using **local document processing, FAISS retrieval, and Qwen3:4B through Ollama**.
 
-The project processes the uploaded PDF locally, creates semantic
-embeddings, stores them in FAISS, retrieves relevant document sections,
-and generates answers using either a local Qwen3:4B model through Ollama
-or Gemini through the Gemini API.
+The application allows users to upload a PDF, retrieve relevant sections for a question, and generate an answer grounded in the retrieved document context.
 
-V1 Features
+## Key Features
 
-Upload financial or annual report PDFs through a Streamlit
-interface.
+* Upload financial and annual report PDFs through a Streamlit interface
+* Extract and chunk PDF text using PyMuPDF
+* Generate embeddings with `all-MiniLM-L6-v2`
+* Store document vectors in FAISS
+* Retrieve the top 4 relevant chunks for each query
+* Display page-level sources for retrieved content
+* Generate answers using **Qwen3:4B locally through Ollama**
+* Optional Gemini API mode for online inference
 
-Extract text from PDF pages using PyMuPDF.
+## Architecture
 
-Split extracted text into smaller chunks for retrieval.
-
-Generate embeddings using all-MiniLM-L6-v2.
-
-Store and search document embeddings using FAISS.
-
-Retrieve the most relevant document chunks for each question.
-
-Display page-level sources for retrieved information.
-
-Support two LLM modes:
-
-Offline - Qwen3:4B using Ollama
-
-Online - Gemini using the Gemini API
-
-Keep PDF processing, embeddings, and FAISS retrieval local in both
-modes.
-
-Architecture
-
-                    PDF Upload
-                        |
-                        v
-                PyMuPDF Extraction
-                        |
-                        v
-                     Chunking
-                        |
-                        v
-              MiniLM Embeddings
-                        |
-                        v
-                      FAISS
-                        |
-                  User Question
-                        |
-                        v
-               Similarity Search
-                        |
-                        v
-                Retrieved Chunks
-                        |
-                +-------+-------+
-                |               |
-                v               v
-          Qwen3:4B          Gemini API
-           Ollama            (Online)
-          (Offline)
-                |               |
-                +-------+-------+
-                        |
-                        v
+```text
+                    PDF Document
+                         │
+                         ▼
+                  PyMuPDF Extraction
+                         │
+                         ▼
+                    Text Chunking
+                         │
+                         ▼
+              all-MiniLM-L6-v2
+                   Embeddings
+                         │
+                         ▼
+                       FAISS
+                         │
+                  Similarity Search
+                         │
+                         ▼
+                 Relevant Chunks
+                         │
+                  ┌──────┴──────┐
+                  ▼             ▼
+             Qwen3:4B       Gemini API
+              Ollama         (Optional)
+                  │             │
+                  └──────┬──────┘
+                         ▼
                      Answer
-                        |
-                        v
-                  Page Sources
+                         │
+                         ▼
+                  Source Pages
+```
 
-Tech Stack
+## Tech Stack
 
-Python
+| Component      | Technology         |
+| -------------- | ------------------ |
+| Interface      | Streamlit          |
+| PDF Processing | PyMuPDF            |
+| Text Splitting | LangChain          |
+| Embeddings     | `all-MiniLM-L6-v2` |
+| Vector Search  | FAISS              |
+| Local LLM      | Qwen3:4B + Ollama  |
+| Online LLM     | Google Gemini API  |
+| Language       | Python             |
 
-Streamlit
+## Project Structure
 
-PyMuPDF
-
-LangChain
-
-Hugging Face Sentence Transformers
-
-FAISS
-
-Ollama
-
-Qwen3:4B
-
-Google Gemini API
-
-Project Structure
-
-investor-rag/
+```text
+Investor-rag/
 │
 ├── app.py
 ├── requirements.txt
 ├── README.md
 ├── .gitignore
-├── .env
 │
 ├── src/
 │   ├── __init__.py
@@ -116,223 +87,173 @@ investor-rag/
 │
 └── data/
     └── uploads/
+```
 
-Installation
+## Retrieval Configuration
 
-1. Clone the repository
+The current V1 pipeline uses:
 
-git clone <YOUR_GITHUB_REPOSITORY_URL>
-cd investor-rag
+```text
+Embedding Model    : all-MiniLM-L6-v2
+Vector Store       : FAISS
+Retrieved Chunks   : Top 4
+Chunk Size         : 1000 characters
+Chunk Overlap      : 100 characters
+```
 
-2. Create a virtual environment
+These parameters provide the baseline retrieval configuration for V1.
 
+## Local Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/spycoder01/Investor-rag.git
+cd Investor-rag
+```
+
+### 2. Create a virtual environment
+
+```bash
 python -m venv venv
+```
 
-Activate it on Windows:
+On Windows:
 
+```bash
 venv\Scripts\activate
+```
 
-3. Install dependencies
+### 3. Install dependencies
 
+```bash
 pip install -r requirements.txt
+```
 
-Ollama Setup
+### 4. Set up Ollama
 
 Install Ollama and download Qwen3:4B:
 
+```bash
 ollama pull qwen3:4b
+```
 
-Check that the model is available:
+Verify the model:
 
+```bash
 ollama list
+```
 
-You can test it with:
+You can also test it directly:
 
+```bash
 ollama run qwen3:4b
+```
 
-The offline mode uses this local model to generate answers without
-sending the retrieved context to a cloud LLM.
+### 5. Download the embedding model
 
-Gemini API Setup
+The project uses:
 
-Create a .env file in the project root:
+```text
+sentence-transformers/all-MiniLM-L6-v2
+```
 
-GOOGLE_API_KEY=your_gemini_api_key
+Download it once and store it locally if you want the embedding stage to work without internet access.
 
-The API key is loaded through an environment variable.
+### 6. Run the application
 
-Do not commit .env to GitHub.
-
-Make sure .gitignore contains:
-
-.env
-venv/
-__pycache__/
-*.pyc
-data/uploads/
-
-Run the Application
-
-Start Streamlit:
-
+```bash
 streamlit run app.py
+```
 
-The application will open in your browser.
+The Streamlit interface will open in your browser.
 
-How to Use
+## How It Works
 
-Upload an annual report or financial PDF.
+1. Upload a financial or annual report PDF.
+2. The application extracts text from the document.
+3. The extracted text is divided into chunks.
+4. Each chunk is converted into an embedding using `all-MiniLM-L6-v2`.
+5. Embeddings are indexed in FAISS.
+6. The user's question is converted into an embedding.
+7. FAISS retrieves the most relevant document chunks.
+8. The retrieved context is passed to the selected LLM.
+9. The generated answer is displayed along with the relevant source pages.
 
-Select an LLM mode:
+## Example Questions
 
-Offline - Qwen3:4B
-
-Online - Gemini
-
-Click Process Document.
-
-Enter a question about the uploaded document.
-
-The system retrieves relevant chunks from the PDF.
-
-The selected LLM generates an answer using the retrieved context.
-
-The application displays the source pages used for retrieval.
-
-Example Questions
-
-What was the EBIT margin in the Automotive Segment?
-
+```text
 What was the company's revenue in 2025?
 
-What are the key financial highlights mentioned in the report?
+What was the EBIT margin of the automotive segment?
+
+What were the major financial highlights?
 
 What guidance was provided for the next financial year?
+```
 
-V1 Retrieval Configuration
+## V1 Limitations
 
-The current V1 uses:
+The current version uses **semantic similarity retrieval with FAISS** as the retrieval method.
 
-Embedding model: sentence-transformers/all-MiniLM-L6-v2
+The following are not yet implemented:
 
-Vector database: FAISS
+* BM25 keyword retrieval
+* Hybrid retrieval
+* Cross-encoder reranking
+* Dynamic retrieval parameter tuning
+* Automated RAG evaluation
+* OCR for scanned PDFs
+* Financial KPI extraction
 
-Similarity search: Top 4 chunks
+## Roadmap
 
-Chunk size: 1000 characters
+### V2 — Hybrid Retrieval
 
-Chunk overlap: 100 characters
+Combine FAISS semantic retrieval with BM25 keyword search.
 
-These parameters can be improved in later versions.
+### V3 — Reranking
 
-Online vs Offline Mode
+Add a cross-encoder to rerank retrieved chunks based on query relevance.
 
-Offline Mode
+### V4 — Dynamic RAG Controls
 
-PDF → Local Embeddings → FAISS → Retrieved Chunks → Qwen3:4B
+Allow users to configure retrieval parameters such as chunk size, overlap, and Top-K directly from the interface.
 
-Qwen3:4B runs locally through Ollama.
+### V5 — RAG Evaluation
 
-Online Mode
+Evaluate retrieval and generation using metrics such as:
 
-PDF → Local Embeddings → FAISS → Retrieved Chunks → Gemini API
+* Recall@K
+* MRR
+* Context precision
+* Answer relevance
+* Faithfulness / unsupported-claim rate
 
-The PDF is processed and searched locally. In online mode, the retrieved
-context and question are sent to Gemini to generate the answer.
+### V6 — Investor Intelligence
 
-Limitations of V1
+Add structured financial analysis features such as:
 
-Retrieval currently uses FAISS semantic similarity only.
+* Financial KPI extraction
+* Revenue and profit summaries
+* Segment-wise analysis
+* Year-over-year comparisons
 
-No BM25 keyword retrieval yet.
+## Security
 
-No cross-encoder reranking.
+* API keys should be stored in `.env`.
+* `.env` must not be committed to GitHub.
+* Uploaded PDFs are excluded from version control.
+* Local inference through Ollama keeps the LLM generation stage on the user's machine.
 
-RAG parameters are not dynamically configurable from the UI.
+## Version
 
-No automated retrieval or answer evaluation.
+**V1.0 — Dual-Mode PDF RAG**
 
-Financial KPI extraction is not yet implemented.
+The first version establishes the complete document RAG pipeline with PDF processing, local embeddings, FAISS retrieval, source-page display, and both local and online LLM inference.
 
-OCR is not included for scanned/image-only PDFs.
+## Author
 
-Future Improvements
+**Abhisek Gupta**
 
-Planned improvements include:
-
-V2 --- Hybrid Retrieval
-
-Combine:
-
-FAISS semantic search
-
-BM25 keyword search
-
-to improve retrieval for both conceptual questions and exact financial
-terms.
-
-V3 --- Reranking
-
-Add a cross-encoder reranker to reorder retrieved chunks based on query
-relevance.
-
-V4 --- Dynamic RAG Controls
-
-Add Streamlit controls for:
-
-Chunk size
-
-Chunk overlap
-
-Retrieval Top-K
-
-Final Top-K
-
-Retrieval method
-
-Reranking
-
-V5 --- RAG Evaluation
-
-Add metrics such as:
-
-Recall@K
-
-MRR
-
-Context precision
-
-Answer relevance
-
-Faithfulness / unsupported-claim rate
-
-V6 --- Investor Intelligence Features
-
-Add:
-
-Financial KPI extraction
-
-Revenue and profit summaries
-
-Segment-wise analysis
-
-Year-over-year comparisons
-
-Investor-focused dashboard
-
-Security
-
-API keys should be stored in .env.
-
-.env should never be committed to GitHub.
-
-Uploaded documents should not be committed to the repository.
-
-Offline mode uses local inference through Ollama.
-
-Version
-
-V1.0 --- Dual-Mode PDF RAG
-
-Current version focuses on building a working document RAG pipeline with
-local retrieval and both offline and online LLM inference.
+GitHub: [@spycoder01](https://github.com/spycoder01)
